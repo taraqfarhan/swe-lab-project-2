@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}FoodFlow - Fast & Fresh Food Delivery{% endblock %} | CSE 3206 (Group 11)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF4757',
+                        'primary-dark': '#E02438',
+                        secondary: '#2ED573',
+                        dark: '#2F3542',
+                        accent: '#FFA502'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Brand / Logo -->
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('customer.index') }}" class="flex items-center space-x-2">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center text-white shadow-md">
+                            <i class="fa-solid fa-utensils text-lg"></i>
+                        </div>
+                        <div>
+                            <span class="text-xl font-black tracking-tight text-slate-900">Food<span class="text-primary">Flow</span></span>
+                            <span class="hidden md:inline-block ml-2 px-2 py-0.5 text-xs font-semibold bg-red-100 text-primary rounded-full">Kanban MVP</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="{{ url_for('customer.index') }}" class="text-sm font-medium text-slate-600 hover:text-primary transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-store text-slate-400"></i> Restaurants
+                    </a>
+                    
+                    <a href="{{ url_for('kanban.board') }}" class="text-sm font-semibold text-primary hover:text-primary-dark transition flex items-center gap-1.5 bg-red-50 px-3 py-1.5 rounded-lg border border-red-200">
+                        <i class="fa-solid fa-columns"></i> Live Kanban Board
+                    </a>
+
+                    {% if session.get('user_role') == 'restaurant_owner' %}
+                        <a href="{{ url_for('restaurant.dashboard') }}" class="text-sm font-medium text-slate-700 hover:text-primary transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-fire-burner text-amber-500"></i> Kitchen Orders
+                        </a>
+                        <a href="{{ url_for('restaurant.menu_manage') }}" class="text-sm font-medium text-slate-700 hover:text-primary transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i> Manage Menu
+                        </a>
+                    {% elif session.get('user_role') == 'rider' %}
+                        <a href="{{ url_for('delivery.dashboard') }}" class="text-sm font-medium text-slate-700 hover:text-primary transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-motorcycle text-emerald-500"></i> Rider Hub
+                        </a>
+                    {% elif session.get('user_role') == 'admin' %}
+                        <a href="{{ url_for('admin.dashboard') }}" class="text-sm font-medium text-slate-700 hover:text-primary transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-purple-600"></i> Admin Panel
+                        </a>
+                    {% endif %}
+                </nav>
+
+                <!-- Right Side Actions: Cart & Auth -->
+                <div class="flex items-center space-x-4">
+                    <!-- Shopping Cart Button -->
+                    <a href="{{ url_for('customer.view_cart') }}" class="relative p-2 text-slate-600 hover:text-primary transition">
+                        <i class="fa-solid fa-cart-shopping text-xl"></i>
+                        {% if cart_item_count > 0 %}
+                            <span class="absolute -top-1 -right-1 bg-primary text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                                {{ cart_item_count }}
+                            </span>
+                        {% endif %}
+                    </a>
+
+                    {% if session.get('user_id') %}
+                        <!-- User Menu Dropdown -->
+                        <div class="relative group">
+                            <button class="flex items-center space-x-2 py-1.5 px-3 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium transition">
+                                <i class="fa-solid fa-circle-user text-slate-500 text-lg"></i>
+                                <span class="max-w-[120px] truncate">{{ session.get('full_name') }}</span>
+                                <i class="fa-solid fa-chevron-down text-xs text-slate-400"></i>
+                            </button>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 hidden group-hover:block transition duration-200 z-50">
+                                <div class="px-4 py-2 border-b border-slate-100">
+                                    <p class="text-xs text-slate-400 uppercase font-semibold">Role</p>
+                                    <p class="text-sm font-bold text-slate-800 capitalize">{{ session.get('user_role', 'customer').replace('_', ' ') }}</p>
+                                </div>
+                                <a href="{{ url_for('customer.my_orders') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                                    <i class="fa-solid fa-receipt text-slate-400"></i> My Orders
+                                </a>
+                                <a href="{{ url_for('auth.profile') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                                    <i class="fa-solid fa-user-gear text-slate-400"></i> Account Profile
+                                </a>
+                                <hr class="my-1 border-slate-100">
+                                <a href="{{ url_for('auth.logout') }}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="flex items-center space-x-2">
+                            <a href="{{ url_for('auth.login') }}" class="text-sm font-semibold text-slate-700 hover:text-primary px-3 py-1.5 transition">Log In</a>
+                            <a href="{{ url_for('auth.register') }}" class="text-sm font-semibold bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-xl shadow-sm transition">Sign Up</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% set bg_color = 'bg-red-50 border-red-200 text-red-800' if category in ['danger', 'error'] else ('bg-emerald-50 border-emerald-200 text-emerald-800' if category == 'success' else ('bg-amber-50 border-amber-200 text-amber-800' if category == 'warning' else 'bg-blue-50 border-blue-200 text-blue-800')) %}
+                    <div class="auto-dismiss-alert mb-3 p-4 rounded-xl border {{ bg_color }} flex items-center justify-between shadow-sm">
+                        <div class="flex items-center space-x-3">
+                            {% if category == 'success' %}
+                                <i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
+                            {% elif category in ['danger', 'error'] %}
+                                <i class="fa-solid fa-triangle-exclamation text-red-600 text-lg"></i>
+                            {% elif category == 'warning' %}
+                                <i class="fa-solid fa-circle-exclamation text-amber-600 text-lg"></i>
+                            {% else %}
+                                <i class="fa-solid fa-circle-info text-blue-600 text-lg"></i>
+                            {% endif %}
+                            <span class="text-sm font-medium">{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Block -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-8 mt-12 text-slate-600 text-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-2">
+                <div class="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-xs">FF</div>
+                <span class="font-bold text-slate-800">FoodFlow</span>
+                <span class="text-slate-400">| CSE 3206 Software Engineering Lab 2 (Group 11)</span>
+            </div>
+            <div class="flex items-center space-x-6 text-xs text-slate-500">
+                <span>Process Model: <strong class="text-slate-700">Kanban (WIP-Limited Flow)</strong></span>
+                <span>RUET CSE Department</span>
+                <a href="{{ url_for('kanban.board') }}" class="text-primary hover:underline">Kanban Pipeline</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Rider Dashboard - FoodFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-6 my-6">
+    <!-- Header with Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm md:col-span-2">
+            <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md uppercase">Rider Hub</span>
+            <h1 class="text-2xl font-black text-slate-900 mt-2">{{ session.get('full_name') }}</h1>
+            <p class="text-xs text-slate-500">Pick up ready orders and deliver to customers on time</p>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total Completed</span>
+            <p class="text-3xl font-black text-slate-900 mt-1">{{ completed_deliveries|length }}</p>
+            <span class="text-[11px] text-emerald-600 font-semibold">Deliveries Done</span>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm text-center">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total Earnings</span>
+            <p class="text-3xl font-black text-emerald-600 mt-1">${{ "%.2f"|format(total_earnings) }}</p>
+            <span class="text-[11px] text-slate-400 font-medium">Delivery Fees</span>
+        </div>
+    </div>
+
+    <!-- Active Assigned Deliveries -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-motorcycle text-primary"></i> Active Delivery Tasks ({{ active_deliveries|length }})
+        </h2>
+
+        {% if active_deliveries %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for order in active_deliveries %}
+                    <div class="border-2 border-primary/30 rounded-2xl p-5 bg-red-50/20 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="font-black text-slate-900 text-sm">#{{ order.order_number }}</span>
+                            {% if order.status == 'ready' %}
+                                <span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">Ready at Restaurant</span>
+                            {% elif order.status == 'in_transit' %}
+                                <span class="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full animate-pulse">In Transit</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="space-y-1.5 text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
+                            <p><strong><i class="fa-solid fa-store text-slate-400"></i> Pickup:</strong> {{ order.restaurant_name }} ({{ order.restaurant_address }})</p>
+                            <p><strong><i class="fa-solid fa-location-dot text-primary"></i> Drop-off:</strong> {{ order.delivery_address }}</p>
+                            <p><strong><i class="fa-solid fa-user text-slate-400"></i> Customer:</strong> {{ order.customer_name }} ({{ order.customer_phone }})</p>
+                            <p><strong><i class="fa-solid fa-money-bill text-emerald-500"></i> Pay Mode:</strong> {{ order.payment_method.replace('_', ' ') }} (${{ "%.2f"|format(order.total_amount) }})</p>
+                        </div>
+
+                        <div class="pt-2 flex gap-2">
+                            {% if order.status == 'ready' %}
+                                <form method="POST" action="{{ url_for('delivery.update_status', order_id=order.id) }}" class="w-full">
+                                    <input type="hidden" name="target_status" value="in_transit">
+                                    <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-box-open"></i> Picked Up - Start Delivery
+                                    </button>
+                                </form>
+                            {% elif order.status == 'in_transit' %}
+                                <form method="POST" action="{{ url_for('delivery.update_status', order_id=order.id) }}" class="w-full">
+                                    <input type="hidden" name="target_status" value="delivered">
+                                    <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-circle-check"></i> Mark as Delivered
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-xs text-slate-400">No active delivery assignments at this moment.</p>
+        {% endif %}
+    </div>
+
+    <!-- Available Orders for Pickup -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-box text-purple-600"></i> Available Orders Ready for Pickup ({{ available_orders|length }})
+        </h2>
+
+        {% if available_orders %}
+            <div class="space-y-3">
+                {% for order in available_orders %}
+                    <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div class="space-y-1 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-slate-900 text-sm">#{{ order.order_number }}</span>
+                                <span class="text-slate-500">from <strong>{{ order.restaurant_name }}</strong></span>
+                            </div>
+                            <p class="text-slate-600"><i class="fa-solid fa-location-dot text-slate-400"></i> Deliver to: {{ order.delivery_address }}</p>
+                            <p class="text-slate-400">Earning for this order: <strong class="text-emerald-600">${{ "%.2f"|format(order.delivery_fee) }}</strong></p>
+                        </div>
+                        <form method="POST" action="{{ url_for('delivery.accept_order', order_id=order.id) }}">
+                            <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-hand-holding-hand"></i> Accept Job
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8 text-slate-400">
+                <i class="fa-solid fa-bell-slash text-2xl mb-2"></i>
+                <p class="text-xs">No pending orders waiting for pickup right now.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

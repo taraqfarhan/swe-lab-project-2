@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Restaurants - FoodFlow{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative rounded-3xl bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white p-8 md:p-12 mb-8 overflow-hidden shadow-xl">
+    <div class="absolute inset-0 opacity-20 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+    <div class="relative z-10 max-w-2xl">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/30 text-red-300 border border-red-500/30 mb-4">
+            <i class="fa-solid fa-bolt"></i> Streamlined with Kanban Flow
+        </span>
+        <h1 class="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+            Hungry? Get Fast, Fresh Food Delivered.
+        </h1>
+        <p class="text-slate-300 text-sm md:text-base mb-6">
+            Explore Rajshahi's top restaurants with continuous visual order tracking and zero kitchen bottlenecks.
+        </p>
+        
+        <!-- Search Bar -->
+        <form method="GET" action="{{ url_for('customer.index') }}" class="flex items-center bg-white rounded-2xl p-1.5 shadow-lg max-w-xl">
+            <div class="pl-3 pr-2 text-slate-400">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <input type="text" name="q" value="{{ search_query }}" 
+                   placeholder="Search restaurants, dishes, or cuisines..." 
+                   class="w-full text-slate-800 text-sm focus:outline-none px-2 py-2">
+            {% if selected_cuisine and selected_cuisine != 'all' %}
+                <input type="hidden" name="cuisine" value="{{ selected_cuisine }}">
+            {% endif %}
+            <button type="submit" class="bg-primary hover:bg-primary-dark text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition shadow-md">
+                Search
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Cuisine Filter Chips -->
+<div class="flex items-center space-x-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+    <a href="{{ url_for('customer.index', q=search_query) }}" 
+       class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition {{ 'bg-primary text-white shadow-md' if selected_cuisine == 'all' else 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200' }}">
+        🍔 All Cuisines
+    </a>
+    <a href="{{ url_for('customer.index', cuisine='Italian', q=search_query) }}" 
+       class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition {{ 'bg-primary text-white shadow-md' if selected_cuisine == 'Italian' else 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200' }}">
+        🍕 Italian & Pizza
+    </a>
+    <a href="{{ url_for('customer.index', cuisine='Japanese', q=search_query) }}" 
+       class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition {{ 'bg-primary text-white shadow-md' if selected_cuisine == 'Japanese' else 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200' }}">
+        🍣 Japanese & Sushi
+    </a>
+    <a href="{{ url_for('customer.index', cuisine='American', q=search_query) }}" 
+       class="px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition {{ 'bg-primary text-white shadow-md' if selected_cuisine == 'American' else 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200' }}">
+        🍔 Burgers & Fast Food
+    </a>
+</div>
+
+<!-- Restaurant List Grid -->
+<div>
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-slate-900">Featured Restaurants ({{ restaurants|length }})</h2>
+        <a href="{{ url_for('kanban.board') }}" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-chart-line"></i> View Real-Time Kitchen WIP Limits
+        </a>
+    </div>
+
+    {% if restaurants %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for rest in restaurants %}
+                <a href="{{ url_for('customer.restaurant_menu', restaurant_id=rest.id) }}" 
+                   class="group bg-white rounded-2xl border border-slate-200 overflow-hidden card-shadow hover:border-primary/50 flex flex-col h-full">
+                    <!-- Image -->
+                    <div class="relative h-48 w-full overflow-hidden bg-slate-100">
+                        <img src="{{ rest.image_url }}" alt="{{ rest.name }}" 
+                             class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-3 right-3 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-bold text-slate-800 shadow flex items-center gap-1">
+                            <i class="fa-solid fa-star text-amber-500"></i>
+                            <span>{{ rest.rating }}</span>
+                        </div>
+                        <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-medium text-white flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock text-emerald-400"></i> 20-30 mins
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div class="p-5 flex flex-col flex-grow">
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="font-bold text-lg text-slate-900 group-hover:text-primary transition">{{ rest.name }}</h3>
+                        </div>
+                        <p class="text-xs font-semibold text-primary mb-2">{{ rest.cuisine_type }}</p>
+                        <p class="text-xs text-slate-500 line-clamp-2 mb-4 flex-grow">{{ rest.description }}</p>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                            <span class="flex items-center gap-1 truncate max-w-[200px]">
+                                <i class="fa-solid fa-location-dot text-slate-400"></i> {{ rest.address }}
+                            </span>
+                            <span class="font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded-md">$2.99 delivery</span>
+                        </div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
+            <i class="fa-solid fa-store-slash text-4xl text-slate-300 mb-3"></i>
+            <p class="text-slate-600 font-medium">No restaurants found matching your criteria.</p>
+            <a href="{{ url_for('customer.index') }}" class="mt-3 inline-block text-sm text-primary font-semibold hover:underline">Clear filters</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
