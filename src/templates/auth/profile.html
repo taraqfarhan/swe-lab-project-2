@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - FoodFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto my-6">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="bg-gradient-to-r from-primary to-accent p-6 text-white">
+            <div class="flex items-center space-x-4">
+                <div class="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center text-2xl font-bold">
+                    {{ user.full_name[0] }}
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">{{ user.full_name }}</h1>
+                    <p class="text-white/80 text-sm">@{{ user.username }} • <span class="capitalize">{{ user.role.replace('_', ' ') }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-3 bg-slate-50 rounded-xl">
+                    <span class="text-xs text-slate-400 font-semibold uppercase">Email</span>
+                    <p class="text-sm font-medium text-slate-800">{{ user.email }}</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl">
+                    <span class="text-xs text-slate-400 font-semibold uppercase">Phone</span>
+                    <p class="text-sm font-medium text-slate-800">{{ user.phone or 'Not provided' }}</p>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <span class="text-xs text-slate-400 font-semibold uppercase">Default Delivery Address</span>
+                <p class="text-sm font-medium text-slate-800">{{ user.address or 'Not provided' }}</p>
+            </div>
+
+            <div class="p-3 bg-slate-50 rounded-xl">
+                <span class="text-xs text-slate-400 font-semibold uppercase">Member Since</span>
+                <p class="text-sm font-medium text-slate-800">{{ user.created_at }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

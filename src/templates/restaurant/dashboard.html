@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Kitchen Orders - {{ restaurant.name if restaurant else 'Restaurant' }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6 my-6">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div>
+            <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-md uppercase">Restaurant Portal</span>
+            <h1 class="text-2xl font-black text-slate-900 mt-1">{{ restaurant.name if restaurant else 'My Kitchen' }}</h1>
+            <p class="text-xs text-slate-500">Manage live incoming orders and dispatch to riders</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('restaurant.menu_manage') }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+                <i class="fa-solid fa-utensils text-slate-500"></i> Manage Menu
+            </a>
+            <a href="{{ url_for('kanban.board') }}" class="px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl shadow hover:bg-primary-dark transition flex items-center gap-1.5">
+                <i class="fa-solid fa-columns"></i> Kitchen Kanban View
+            </a>
+        </div>
+    </div>
+
+    <!-- Active Orders List -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-fire-burner text-amber-500"></i> Active Kitchen & Delivery Orders ({{ orders|length }})
+        </h2>
+
+        {% if orders %}
+            <div class="space-y-4">
+                {% for order in orders %}
+                    <div class="border border-slate-200 rounded-2xl p-5 hover:border-slate-300 transition bg-slate-50/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div class="space-y-2 flex-grow">
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-slate-900 text-base">#{{ order.order_number }}</span>
+                                {% if order.status == 'placed' %}
+                                    <span class="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full">New Order (Backlog)</span>
+                                {% elif order.status == 'preparing' %}
+                                    <span class="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-xs font-bold rounded-full animate-pulse">Cooking (In WIP)</span>
+                                {% elif order.status == 'ready' %}
+                                    <span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">Ready for Rider</span>
+                                {% elif order.status == 'in_transit' %}
+                                    <span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-full">Dispatched / In Transit</span>
+                                {% elif order.status == 'delivered' %}
+                                    <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">Completed</span>
+                                {% endif %}
+                                <span class="text-xs text-slate-400">Placed: {{ order.placed_at }}</span>
+                            </div>
+
+                            <p class="text-xs text-slate-700">
+                                <strong>Customer:</strong> {{ order.customer_name }} ({{ order.customer_phone }}) • <strong>Destination:</strong> {{ order.delivery_address }}
+                            </p>
+
+                            {% if order.notes %}
+                                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 inline-block">
+                                    <i class="fa-solid fa-note-sticky"></i> Note: {{ order.notes }}
+                                </p>
+                            {% endif %}
+
+                            <!-- Ordered Items -->
+                            <div class="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-100">
+                                {% for it in order.items %}
+                                    <div class="flex justify-between py-0.5">
+                                        <span><strong>{{ it.quantity }}x</strong> {{ it.item_name }}</span>
+                                        <span>${{ "%.2f"|format(it.subtotal) }}</span>
+                                    </div>
+                                {% endfor %}
+                                <div class="pt-2 mt-1 border-t border-slate-100 flex justify-between font-bold text-slate-900">
+                                    <span>Total:</span>
+                                    <span>${{ "%.2f"|format(order.total_amount) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Workflow Action Form -->
+                        <div class="w-full lg:w-auto flex-shrink-0 flex flex-col gap-2">
+                            {% if order.status == 'placed' %}
+                                <form method="POST" action="{{ url_for('restaurant.update_order_status', order_id=order.id) }}">
+                                    <input type="hidden" name="target_status" value="preparing">
+                                    <button type="submit" class="w-full px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-fire"></i> Accept & Start Cooking
+                                    </button>
+                                </form>
+                            {% elif order.status == 'preparing' %}
+                                <form method="POST" action="{{ url_for('restaurant.update_order_status', order_id=order.id) }}">
+                                    <input type="hidden" name="target_status" value="ready">
+                                    <button type="submit" class="w-full px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                                        <i class="fa-solid fa-bell-concierge"></i> Mark Ready for Pickup
+                                    </button>
+                                </form>
+                            {% elif order.status == 'ready' %}
+                                <div class="text-xs text-center text-purple-700 font-semibold bg-purple-50 p-2.5 rounded-xl border border-purple-200">
+                                    Waiting for rider pickup...
+                                </div>
+                            {% elif order.status == 'in_transit' %}
+                                <div class="text-xs text-center text-blue-700 font-semibold bg-blue-50 p-2.5 rounded-xl border border-blue-200">
+                                    Rider on delivery route
+                                </div>
+                            {% elif order.status == 'delivered' %}
+                                <div class="text-xs text-center text-emerald-700 font-bold bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+                                    <i class="fa-solid fa-check"></i> Delivered
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 text-slate-400">
+                <i class="fa-solid fa-utensils text-3xl mb-2"></i>
+                <p class="text-sm">No incoming orders right now.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

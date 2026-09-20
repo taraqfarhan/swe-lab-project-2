@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - FoodFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-8 my-6">
+    <!-- Admin Header -->
+    <div class="bg-slate-900 text-white p-8 rounded-3xl shadow-xl flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <span class="text-xs font-bold text-purple-400 bg-purple-950/60 px-3 py-1 rounded-full uppercase border border-purple-800">
+                System Administration
+            </span>
+            <h1 class="text-3xl font-black mt-2">Platform Control Hub</h1>
+            <p class="text-slate-400 text-xs mt-1">Real-time metrics, user oversight, and Kanban operational efficiency</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('kanban.board') }}" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-xs rounded-xl shadow transition flex items-center gap-2">
+                <i class="fa-solid fa-columns"></i> Full Kanban Board
+            </a>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-bold text-slate-400 uppercase">Gross Platform Revenue</span>
+            <p class="text-2xl font-black text-slate-900 mt-2">${{ "%.2f"|format(metrics.total_revenue) }}</p>
+            <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-arrow-up"></i> Completed Orders</span>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total Orders Handled</span>
+            <p class="text-2xl font-black text-slate-900 mt-2">{{ metrics.total_orders }}</p>
+            <span class="text-[11px] text-slate-500">{{ metrics.completed_orders }} Delivered</span>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-bold text-slate-400 uppercase">Active WIP Pipeline</span>
+            <p class="text-2xl font-black text-amber-600 mt-2">{{ metrics.active_wip_orders }} Orders</p>
+            <span class="text-[11px] text-slate-500">Currently in cooking / transit</span>
+        </div>
+        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-bold text-slate-400 uppercase">Avg Delivery Lead Time</span>
+            <p class="text-2xl font-black text-purple-600 mt-2">{{ metrics.avg_lead_time_minutes }} mins</p>
+            <span class="text-[11px] text-purple-500 font-medium">Cycle Time: {{ metrics.avg_cycle_time_minutes }}m</span>
+        </div>
+    </div>
+
+    <!-- Users & Restaurants Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Registered Users -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-users text-blue-500"></i> Registered Users ({{ users|length }})
+            </h2>
+            <div class="max-h-80 overflow-y-auto space-y-2 text-xs">
+                {% for u in users %}
+                    <div class="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-900">{{ u.full_name }}</span>
+                            <span class="text-slate-400">(@{{ u.username }})</span>
+                            <p class="text-[11px] text-slate-500">{{ u.email }}</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full font-bold text-[10px] uppercase
+                            {{ 'bg-purple-100 text-purple-800' if u.role == 'admin' else ('bg-amber-100 text-amber-800' if u.role == 'restaurant_owner' else ('bg-blue-100 text-blue-800' if u.role == 'rider' else 'bg-slate-200 text-slate-700')) }}">
+                            {{ u.role.replace('_', ' ') }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Platform Restaurants -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-store text-amber-500"></i> Partner Restaurants ({{ restaurants|length }})
+            </h2>
+            <div class="max-h-80 overflow-y-auto space-y-2 text-xs">
+                {% for r in restaurants %}
+                    <div class="p-3 bg-slate-50 rounded-xl flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-slate-900">{{ r.name }}</span>
+                            <span class="text-xs text-primary font-semibold">({{ r.cuisine_type }})</span>
+                            <p class="text-[11px] text-slate-400">{{ r.address }}</p>
+                        </div>
+                        <span class="px-2.5 py-1 bg-amber-100 text-amber-800 font-bold rounded-lg text-xs">
+                            ⭐ {{ r.rating }}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- All Orders Table -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-list-check text-slate-700"></i> Platform Order Ledger ({{ orders|length }})
+        </h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-400 uppercase font-bold tracking-wider">
+                    <tr>
+                        <th class="p-3">Order #</th>
+                        <th class="p-3">Customer</th>
+                        <th class="p-3">Restaurant</th>
+                        <th class="p-3">Rider</th>
+                        <th class="p-3">Amount</th>
+                        <th class="p-3">Status</th>
+                        <th class="p-3">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for ord in orders %}
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="p-3 font-bold text-slate-900">#{{ ord.order_number }}</td>
+                            <td class="p-3">{{ ord.customer_name }}</td>
+                            <td class="p-3">{{ ord.restaurant_name }}</td>
+                            <td class="p-3">{{ ord.rider_name or 'Unassigned' }}</td>
+                            <td class="p-3 font-bold">${{ "%.2f"|format(ord.total_amount) }}</td>
+                            <td class="p-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase
+                                    {{ 'bg-emerald-100 text-emerald-800' if ord.status == 'delivered' else ('bg-amber-100 text-amber-800' if ord.status == 'preparing' else ('bg-blue-100 text-blue-800' if ord.status == 'in_transit' else 'bg-purple-100 text-purple-800')) }}">
+                                    {{ ord.status }}
+                                </span>
+                            </td>
+                            <td class="p-3 text-slate-400">{{ ord.placed_at }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
